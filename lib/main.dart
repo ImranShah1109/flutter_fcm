@@ -59,7 +59,7 @@ class _MyHomePageState extends State<MyHomePage> {
     super.initState();
     requestPermission();
     getToken();
-    //intiInfo()
+    initInfo();
   }
 
   // initailize flutter local notification for androi and ios
@@ -72,6 +72,42 @@ class _MyHomePageState extends State<MyHomePage> {
     );
 
     flutterLocalNotificationsPlugin.initialize(initializationsSettings,onDidReceiveNotificationResponse: onDidReceiveNotificationResponse);
+
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) async{ 
+      print("...............onMessage...........");
+      print("onMessage: ${message.notification?.title}/${message.notification?.body}");
+
+      BigTextStyleInformation bigTextStyleInformation = BigTextStyleInformation(
+        message.notification!.body.toString(),
+        htmlFormatBigText: true,
+        contentTitle: message.notification!.title.toString(),
+        htmlFormatContent: true
+      );
+
+      AndroidNotificationDetails androidNotificationDetails =  AndroidNotificationDetails(
+          'flutter_fcm', 
+          'flutter_fcm',
+          importance: Importance.high,
+          styleInformation: bigTextStyleInformation,
+          priority: Priority.high,
+        );
+      
+      NotificationDetails notificationDetails = NotificationDetails(
+        android: androidNotificationDetails,
+        iOS: const DarwinNotificationDetails(
+          presentAlert: true,
+          threadIdentifier: 'flutter_fcm'
+        )
+      );
+
+      await flutterLocalNotificationsPlugin.show(
+        0, 
+        message.notification?.title, 
+        message.notification?.body, 
+        notificationDetails,
+        payload: message.data['body']
+      );
+    });
   }
 
   void onDidReceiveNotificationResponse(NotificationResponse notificationResponse) async {
@@ -136,7 +172,7 @@ class _MyHomePageState extends State<MyHomePage> {
   // save the token of particular user in firebase firestore
   void saveToken(String token) async{
 
-    await FirebaseFirestore.instance.collection("UserTokens").doc("User1").set({
+    await FirebaseFirestore.instance.collection("UserTokens").doc("User2").set({
       "token" : token,
     });
   }
